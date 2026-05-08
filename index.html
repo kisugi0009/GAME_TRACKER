@@ -508,7 +508,7 @@
             <button class="btn sm" onclick="openImportExcelModal()">↑ 匯入 Excel</button>
             <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelFile(event)">
             <button class="roster-collapse-btn" id="roster-collapse-btn" onclick="toggleRosterCollapse()">
-              <span id="roster-collapse-icon">▲</span> 收合
+              <span id="roster-collapse-icon">▲</span><span id="roster-collapse-text"> 收合</span>
             </button>
           </div>
         </div>
@@ -1428,7 +1428,7 @@ function renderBanners(game){
 }
 
 // ── Roster ────────────────────────────────────────────────
-let _addCharOwned=false,_rosterFilter='all',_rosterCollapsed=false;
+let _addCharOwned=false,_rosterFilter='all',_rosterCollapsed=(localStorage.getItem('game-tracker-roster-collapsed')==='1');
 function selectCharOwned(v){_addCharOwned=v;document.getElementById('char-owned-yes').classList.toggle('selected',v);document.getElementById('char-owned-no').classList.toggle('selected',!v);}
 function openAddCharModal(){
   _addCharOwned=false;
@@ -1483,12 +1483,18 @@ function renderRoster(gameId){
     return `<div class="roster-char ${c.owned?'owned':'not-owned'}" onclick="toggleCharOwned('${c.id}')" title="${c.owned?'點擊取消':'點擊標記已獲得'}">${rl?`<div class="roster-char-rarity ${rc}">${rl}</div>`:''}<div class="roster-char-name">${esc(c.name)}</div>${c.tag?`<div class="roster-char-tag">${esc(c.tag)}</div>`:''}${c.note?`<div class="roster-char-note">${esc(c.note)}</div>`:''}<div class="task-actions" style="opacity:0;position:absolute;top:5px;left:5px;"><button class="btn sm" style="font-size:9px;padding:2px 5px;" onclick="event.stopPropagation();openEditCharModal('${c.id}')">✎</button></div></div>`;
   }).join('');
   grid.querySelectorAll('.roster-char').forEach(el=>{el.addEventListener('mouseenter',()=>{el.querySelector('.task-actions').style.opacity='1';});el.addEventListener('mouseleave',()=>{el.querySelector('.task-actions').style.opacity='0';});});
+  applyRosterCollapse();
 }
 function toggleRosterCollapse(){
   _rosterCollapsed=!_rosterCollapsed;
-  const body=document.getElementById('roster-body'),icon=document.getElementById('roster-collapse-icon');
-  if(_rosterCollapsed){body.classList.add('collapsed');icon.textContent='▼';document.getElementById('roster-collapse-btn').childNodes.forEach(n=>{if(n.nodeType===3)n.textContent=' 展開';});}
-  else{body.classList.remove('collapsed');icon.textContent='▲';document.getElementById('roster-collapse-btn').childNodes.forEach(n=>{if(n.nodeType===3)n.textContent=' 收合';});}
+  localStorage.setItem('game-tracker-roster-collapsed',_rosterCollapsed?'1':'0');
+  applyRosterCollapse();
+}
+function applyRosterCollapse(){
+  const body=document.getElementById('roster-body'),icon=document.getElementById('roster-collapse-icon'),txt=document.getElementById('roster-collapse-text');
+  if(!body||!icon||!txt)return;
+  if(_rosterCollapsed){body.classList.add('collapsed');icon.textContent='▼';txt.textContent=' 展開';}
+  else{body.classList.remove('collapsed');icon.textContent='▲';txt.textContent=' 收合';}
 }
 
 // ── Excel Import ──────────────────────────────────────────
@@ -1497,7 +1503,7 @@ function openImportExcelModal(){resetImportModal();openModal('modal-import-excel
 function resetImportModal(){_importRows=[];_importHeaders=[];document.getElementById('import-step-1').style.display='';document.getElementById('import-step-2').style.display='none';document.getElementById('import-back-btn').style.display='none';document.getElementById('import-confirm-btn').style.display='none';}
 function resetImportToStep1(){document.getElementById('import-step-1').style.display='';document.getElementById('import-step-2').style.display='none';document.getElementById('import-back-btn').style.display='none';document.getElementById('import-confirm-btn').style.display='none';document.getElementById('excel-file-input').value='';}
 function handleExcelDrop(e){e.preventDefault();const file=e.dataTransfer.files[0];if(file)processExcelFile(file);}
-function handleExcelFile(e){const file=e.target.files[0];if(file)processExcelFile(file);}
+function handleExcelFile(e){const file=e.target.files[0];if(file)processExcelFile(file);e.target.value='';}
 function processExcelFile(file){
   const reader=new FileReader();
   reader.onload=e=>{
